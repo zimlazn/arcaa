@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    function isCoupleMember(coupleId) {
+      let couple = get(/databases/$(database)/documents/couples/$(coupleId)).data;
+      return couple.user1Id == request.auth.uid || couple.user2Id == request.auth.uid;
+    }
+
+    match /couples/{coupleId} {
+      function isValidCouple(data) {
+        return data.keys().hasAll(['user1Id', 'createdAt'])
+            && data.user1Id is string && data.user1Id.size() > 0
+            && data.createdAt is timestamp;
+      }
+      
+      // Allow read if you are a member, or if the couple is open for joining (user2Id is null)
+      allow get: if isSignedIn(); 
+      // Safe list query (only what you belong to)
+      allow list: if isSignedIn() && (resource.data.user1Id == request.auth.uid || resource.data.user2Id == request.auth.uid);
+
+      allow create: if isSignedIn() && isValidId(coupleId)
+                    && isValidCouple(incoming())
+                    && incoming().user1Id == request.auth.uid
+                    && (!('user2Id' in incoming()) || incoming().user2Id == null);
+
+      allow update: if isSignedIn() && isValidId(coupleId) && (
+        (existing().user2Id == null && incoming().user1Id == existing().user1Id) || // Joining
+        (existing().user1Id == request.auth.uid || existing().user2Id == request.auth.uid)
+      );
+    }
+    
+    match /couples/{coupleId}/users/{userId} {
+      allow read, list: if isSignedIn() && isCoupleMember(coupleId);
+      allow create, update: if isSignedIn() && isValidId(coupleId) && isValidId(userId)
+                            && request.auth.uid == userId
+                            && isCoupleMember(coupleId);
+    }
+
+    match /couples/{coupleId}/messages/{messageId} {
+       allow read, list: if isSignedIn() && isCoupleMember(coupleId);
+       allow create: if isSignedIn() && isValidId(coupleId) && isValidId(messageId)
+                     && incoming().senderId == request.auth.uid
+                     && isCoupleMember(coupleId);
+    }
+
+    match /couples/{coupleId}/posts/{postId} {
+       allow read, list: if isSignedIn() && isCoupleMember(coupleId);
+       allow create: if isSignedIn() && isValidId(coupleId) && isValidId(postId)
+                     && incoming().authorId == request.auth.uid
+                     && isCoupleMember(coupleId);
+       allow update: if isSignedIn() && isValidId(coupleId) && isValidId(postId)
+                     && isCoupleMember(coupleId); 
+    }
+
+    match /couples/{coupleId}/stories/{storyId} {
+       allow read, list: if isSignedIn() && isCoupleMember(coupleId);
+       allow create: if isSignedIn() && isValidId(coupleId) && isValidId(storyId)
+                     && incoming().authorId == request.auth.uid
+                     && isCoupleMember(coupleId);
+    }
+
+    match /couples/{coupleId}/locations/{userId} {
+       allow read, list: if isSignedIn() && isCoupleMember(coupleId);
+       allow create, update: if isSignedIn() && isValidId(coupleId) && isValidId(userId)
+                             && request.auth.uid == userId
+                             && isCoupleMember(coupleId);
+    }
+  }
+}

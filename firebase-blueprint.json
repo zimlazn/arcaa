@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "couple": {
+      "title": "Couple",
+      "description": "A paired couple relationship",
+      "type": "object",
+      "properties": {
+        "user1Id": { "type": "string" },
+        "user2Id": { "type": "string" },
+        "code": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "anniversary": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user1Id", "createdAt"]
+    },
+    "userProfile": {
+      "title": "User Profile",
+      "description": "User profile containing name and mood",
+      "type": "object",
+      "properties": {
+        "coupleId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "mood": { "type": "string" },
+        "status": { "type": "string" },
+        "lastActive": { "type": "string", "format": "date-time" },
+        "battery": { "type": "number" }
+      },
+      "required": ["displayName"]
+    },
+    "message": {
+      "title": "Message",
+      "description": "A chat message",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "type": { "type": "string" },
+        "attachmentUrl": { "type": "string" }
+      },
+      "required": ["senderId", "text", "createdAt"]
+    },
+    "post": {
+      "title": "Post",
+      "description": "A feed post",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "caption": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "likes": { "type": "number" }
+      },
+      "required": ["authorId", "imageUrl", "createdAt"]
+    },
+    "story": {
+      "title": "Story",
+      "description": "Expiring story",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "imageUrl", "createdAt", "expiresAt"]
+    },
+    "location": {
+      "title": "Location Update",
+      "description": "User's current location",
+      "type": "object",
+      "properties": {
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["latitude", "longitude", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "couples/{coupleId}": {
+      "schema": "couple",
+      "description": "The root couple object containing both user IDs"
+    },
+    "couples/{coupleId}/users/{userId}": {
+      "schema": "userProfile",
+      "description": "Profiles of the couple members"
+    },
+    "couples/{coupleId}/messages/{messageId}": {
+      "schema": "message",
+      "description": "Chat messages within the couple"
+    },
+    "couples/{coupleId}/posts/{postId}": {
+      "schema": "post",
+      "description": "Shared memory feed for the couple"
+    },
+    "couples/{coupleId}/stories/{storyId}": {
+      "schema": "story",
+      "description": "Expiring stories for the couple"
+    },
+    "couples/{coupleId}/locations/{userId}": {
+      "schema": "location",
+      "description": "Real-time location data for a user"
+    }
+  }
+}
